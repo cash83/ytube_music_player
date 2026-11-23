@@ -120,6 +120,7 @@ class yTubeMusicComponent(MediaPlayerEntity):
 		self._brand_id = str(configuration.get(CONF_BRAND_ID, ""))
 		self._api = None
 		self._js = ""
+		self._cipher = None
 		self._update_needed = False
 
 		self._remote_player = ""
@@ -600,8 +601,14 @@ class yTubeMusicComponent(MediaPlayerEntity):
 			self.exc()
 
 
-		# update cipher
-		await self.async_get_cipher('BB2mjBuAtiQ')
+		# update cipher. It is only needed by the self-decoded url (async_get_url_self),
+		# the pytube path does not use it. pytubefix fails to parse some of the player
+		# variants YouTube serves (SyntaxError out of its nsig parser), so a failure
+		# here must not stop the playback: async_get_url_self retries it on its own.
+		try:
+			await self.async_get_cipher('BB2mjBuAtiQ')
+		except Exception as err:
+			self.log_me('debug', "- async_get_cipher failed, going on without it: " + str(err))
 
 		# display imidiatly a loading state to provide feedback to the user
 		self._allow_next = False
